@@ -1,0 +1,14 @@
+{
+  "minimum-stability": "stable",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "Илья",
+      "email": "email@example.com"
+    }
+  ],
+  "require": {
+    "nutgram/nutgram": "^3.10.0",
+    "ext-mysqli": "*"
+  }
+}
