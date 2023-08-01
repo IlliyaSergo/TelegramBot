@@ -5,9 +5,6 @@ if(!defined('STDOUT')) define('STDOUT', fopen('php://stdout', 'wb'));
 if(!defined('STDERR')) define('STDERR', fopen('php://stderr', 'wb'));
 
 use SergiX44\Nutgram\Nutgram;
-use SergiX44\Nutgram\Telegram\Types\Message\Message;
-use SergiX44\Nutgram\Telegram\Types\Keyboard\KeyboardButton;
-use SergiX44\Nutgram\Telegram\Types\Keyboard\ReplyKeyboardMarkup;
 
 require 'vendor/autoload.php';
 
@@ -17,18 +14,74 @@ $conn = new mysqli("127.0.0.1:3306", "root", "", "TestDataBase");
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
-echo "Connection success";
 
-$conn->query("DROP TABLE IF EXISTS TestTable1");
-$conn->query("CREATE TABLE TestTable1(id INT)");
-$conn->query("INSERT INTO TestTable1(id) VALUES (1), (2), (3)");
+echo "<p>Connection success</p>";
+
+$conn->query("DROP TABLE IF EXISTS Users");
+$conn->query("CREATE TABLE Users(id serial primary key, TGUserID varchar (30), TGName varchar(255), TGSurname varchar(255), TGUsername varchar(255))");
+//$conn->query("INSERT INTO TestTable1(id) VALUES (1), (2), (3)");
 
 $bot = new Nutgram('6465933534:AAGKM9DZgwWxNaR0iRcWm81SrRMinZmXVJo');
 
-//$photo = fopen('death_knight_disciples_ii_fan_art_by_svetoslavpetrov_d7v8n9e-pre.jpg', 'r+');
+$bot->onCommand('Start', function (Nutgram $bot) {
+    $file = "UsersID.txt";
+    $user = $bot->user();
+    $userID = $user->id;
+    $firstName = $user->first_name;
 
-$bot->onCommand('start', function(Nutgram $bot) {
-    $bot->sendMessage('Ciao!');
+    if(!stripos(file_get_contents($file), $userID)) {
+        $bot->sendMessage('You are first! Please, enter the command /write to write your data to the database');
+        $fle = fopen($file, 'w+');
+        fwrite($fle, json_encode($userID .PHP_EOL, JSON_UNESCAPED_UNICODE));
+        if (!file_get_contents($file)) {
+            file_put_contents($file, $userID);
+        }
+        fclose($fle);
+    } else {
+        $bot->sendMessage('Hello, ' .$firstName);
+    }
+});
+
+$bot->onCommand('write', function (Nutgram $bot){
+    $user = $bot->user();
+    $userID = $user->id;
+    $firstName = $user->first_name;
+    $Surname = $user->last_name;
+    $Username = $user->username;
+
+    if (isset($userID) && isset($firstName) && isset($Surname) && isset($Username)) {
+        $conn = mysqli_connect("127.0.0.1:3306", "root", "", "TestDataBase");
+        if (!$conn) {
+            die("Error: " . mysqli_connect_error());
+        }
+
+        $UserID = $conn->real_escape_string($user->id);
+        $FirstName = $conn->real_escape_string($user->first_name);
+        $Surname = $conn->real_escape_string($user->last_name);
+        $Username = $conn->real_escape_string($user->username);
+
+        $res = $conn->query("SELECT COUNT(*) FROM Users WHERE id=1") or die();
+        $row = mysqli_fetch_row($res);
+        if ($row[0]>0) {
+            $bot->sendMessage("Your data is already in the database");
+        } else {
+            $AddInfo = "INSERT INTO Users(TGUserID,TGName,TGSurname,TGUsername) VALUES ('$UserID','$FirstName','$Surname','$Username')";
+            if ($conn->query($AddInfo)) {
+                $bot->sendMessage("Data added successfully");
+            } else {
+                $bot->sendMessage("Data not added");
+                echo "Ошибка: " . $conn->error;
+            }
+        }
+
+//        $AddInfo = "INSERT INTO Users(TGUserID,TGName,TGSurname,TGUsername) VALUES ('$UserID','$FirstName','$Surname','$Username')";
+//        if ($conn->query($AddInfo)) {
+//            $bot->sendMessage("Data added successfully");
+//        } else {
+//            $bot->sendMessage("Data not added");
+//            echo "Ошибка: " . $conn->error;
+//        }
+    }
 });
 
 $bot->onCommand('info', function(Nutgram $bot) {
@@ -36,6 +89,7 @@ $bot->onCommand('info', function(Nutgram $bot) {
     $firstName = $user->first_name;
     $Surname = $user->last_name;
     $Username = $user->username;
+
     $bot->sendMessage('Your ID: ' .$bot->userId());
     $bot->sendMessage('Your name: ' .$firstName);
     $bot->sendMessage('Your surname: ' .$Surname);

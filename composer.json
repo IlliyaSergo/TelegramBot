@@ -9,6 +9,7 @@
   ],
   "require": {
     "nutgram/nutgram": "^3.10.0",
-    "ext-mysqli": "*"
+    "ext-mysqli": "*",
+    "ext-json": "*"
   }
 }
